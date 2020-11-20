@@ -1,0 +1,271 @@
+---
+title: "Arbeidskrav 4"
+author: "Emilie"
+date: "11/17/2020"
+output: html_document
+---
+
+## Introduksjon 
+
+Denne oppgaven består av to ulike deler. I del 1 bruker vi datasettet "ten vs thirty" for å besvare spørsmålet " Hva bør være det anbefalte volumet, 10 RM eller 30 RM for styrkeutvikling?". I del 2 bruker vi datasettet  "strengthTests" for å besvare spørsmålet " Hva bør være den anbefalte intensiteten for styrkeutvikling?"  
+
+
+### Del 1: 
+
+I denne studien ble det gjennomført en trenings intervensjonsstudie med 31 forsøkspersoner i aldere 20 til 30 år og alle deltakerene var menn. Kravet var å ha vært jevnling aktiv/trent 2 - 3 ganger i uken det siste året.
+Intervensjonene besto av 10 uker med treningsopplegg med 2 økter pr uke. Forsøkpersonene ble randomisert i 2 grupper. Der den ene gruppen trente 3 x 10 mens andre gruppen trente 3 x 30. 
+I del 1 har vi tatt utgangspunkt i styrkevariabel legpress. Der vi ser på endringer i 1RM fra pre til post hos deltakerene. 
+
+
+## Bakgrunn: 
+
+Det finnes flere titalls ulike teorier og metoder innenfor styrketrening og mange mener mye forskjellig. I denne oppgaven ser vi på forskjellen mellom 10RM og 30RM i utvikling av styrke og tidligere studier Grgic et. al 2018 ("som så på styrkeutviklingen og RT "resistance training"). viser til at mere motstand i RT øker forbedring i styrke sammenlignet med lavmotstand i RT. Ut i fra dette kan vi basere en hypotese på at 10RM gruppen vil ha en større prosentvis økning enn 30RM gruppen.  
+
+## Hypotese: 
+
+Hypotese : 10RM-gruppa har større økning i 1RM enn 30RM-gruppa. 
+
+## Metode: 
+ 
+### Studiedesign: 
+
+For å kunne sammenligne effekten av 10 og 30 RM, ble deltakerne delt randomisert inn i to ulike grupper. En 10 RM gruppe og en 30 RM gruppe. Der ble deltakerene testet i legpress før (pre), under (mid) og etter (post) treningsintevensjonene. 31 deltakere var med fra første test og 24 som fulførte posttesten. 
+
+
+### Statistisk analyse: 
+
+Vi ville se på forskjellen mellom 10 RM og 30 RM gruppene i 1 RM legpress. Datasettet inneholder flere forskjellige variabler, vi var nødt til reduserer dataen til det vi var interesert i. Dette var 1 RM i pre - og post - test for beggegruppene. Vi gjennomførte en mixed model fordi denne studien er randomisert, denne modellen sammenligner dataen til forsøkspersonene fra sitt utgangspunkt. En mixed model sammenligner disse to gruppene (10RM og 30RM) og estimerer økningen av motstand (kg) over de tre testpunktene. Dataen fra en mixed model ble brukt til å fremstille en gragisk forskjell mellom gruppene. 
+
+
+# Del 1 Anbefalt intensitet for styrke
+
+```{r DEL 1, echo=FALSE, message=FALSE, warning=FALSE }
+
+## Del 1 - Anbefalt intensitet for utvikling av styrke
+
+library(tidyverse)
+library(readxl)
+library(lme4)
+library(broom)
+library(kableExtra)
+library(emmeans)
+ 
+ten_vs_thirty <- read_excel("./Data/ten_vs_thirty (1).xlsx", na = "NA")
+  
+ten_vs_thirty2 <- ten_vs_thirty %>%  
+  filter(exercise == "legpress",
+         !is.na(load)) %>% # Velg exercise vi vil se på
+  mutate(timepoint = factor(timepoint, levels = c("pre", "post"))) # fix the order of timepoint factor
+
+lm1 <- lm(load ~ timepoint * group, data = ten_vs_thirty2)
+
+
+
+```
+
+<br>
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE }
+
+
+
+# Save the confidence intervals
+conf_intervals <- confint(lm1)
+
+# Save the regression coefficients
+coefs <- summary(lm1)$coef
+
+# Using cbind (column bind) to combine the two data frames
+coef_summary <- cbind(coefs, data.frame(conf_intervals)) 
+
+
+coef_summary %>%
+  kbl(caption = c("Tabell 1"),
+      digits = c(3, 3, 3, 3)) %>%
+ 
+  kable_classic()
+
+
+
+```
+
+<br>
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap = " Figur 1: Viser til en stigning hos begge bruppene fra pre- til post-test. "}
+
+
+## Figur med intensitet
+
+
+est2 <- emmeans(lm1, specs = ~ timepoint|group)
+
+
+est2 %>%
+  data.frame() %>%
+  mutate(timepoint = factor(timepoint, levels = c("pre","post"))) %>%
+
+ 
+  ggplot(aes(timepoint, emmean, group = group, color = group) ) + 
+  
+  
+  
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), 
+                position = position_dodge(width = 0.2), 
+                width = 0.1) +
+  geom_line(position = position_dodge(width = 0.2)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  labs(subtitle = "Figur 1") +
+  theme_minimal()
+
+
+```
+
+
+## Resultater del 1: 
+
+Tabell 1 viser at gruppen 30RM starter med et høyere utgangspunkt på 6 Kg enn 10RM gruppen.
+Ved post - test har 10 RM økt 75,4 kg til pre - test og hatt en prosentvis økning 27,5%. 30 RM gruppen har økt med 35 kg fra pre til post test og hatt en prosentvisøkning med 12,4%. 
+
+Figur 1 viser til en stigning hos begge gruppene fra pre- til post-test. SOm nevnt i tabell ser vi en høyerer stigning hos gruppen med 10RM  enn hos gruppen 30RM fra pre- til post- test 
+
+
+## Diskusjon: 
+
+Resultatene etter treningsintensjonen viser til en større økning i styrke hos gruppen som trente 10RM enn gruppen som trente 30RM. Dette samsvarer med vår hypotese. Vi kan trekke sammeligninger med studien til Heggelung et. al (2013) og Grgic et. al (2018). Der de kom frem til at høy motstandtrening gir bedre styrkeutvikling enn lavere motstandtrening. Dette kan sammelingnes med vår studie der færre repetisjonen gir bedre styrkeutvikling. Heggelung (2013) foreslår at færre repetisjoner har større effekt på maksimal styrke enn flere repetisjoner. Flere tidligere funn er med på å styrke reabliteten i studien vår. 
+
+
+
+## Konklusjon: 
+
+Vi ser en høyere potensiel økning av styrke for 10RM gruppen i forhold til 30RM gruppen. Forskjellen er signifikant mellom gruppene. Men flere studier bør gjennomføres og med et større utvalg. Derfor vil vi konkludere med at det er en tendens til større økning av styrke med færre repetisjoner. 
+
+
+# Del 2 - Anbefalt volum for utvikling av styrke: 
+
+## Introduksjo: 
+
+I denne studien ble det gjennomført en trenings intervensjonsstudie med 40 forsøskpersoner
+i alderen 30 - 40 år. Kravet var å ha vært jevnling aktiv/trent 2 - 3 ganger i uken det siste året.
+Intervensjonene besto av 12 uker med treningsopplegg med 2 økter pr uke. Det var både kvinner og menn med i studien. Treningsopplegget besto av ren rekke øvelser for å styrke under ekstrimteten. 
+
+Det ble gjennomført en pre, session1, og post - test i øvelsen isk.60. Dette vil si en isokinetisk test med 60 grader i dreiemonentet som går på underkestrimtetene. 
+
+## Bakgrunn: 
+
+Innenfor dette temaet med antall sett i trening, så er litteraturen godt representert med anbeflinger med flere sett for å utvikle styrke (Stoppani, 2006). På bakgrunn av litteraturern som finnes vil vil forvente at det vil være en større økning i mulitple gruppen en single gruppen.  
+
+
+## Hypotese: Multiple-gruppa har større økning i muskelstyrke sammenlignet med single-gruppa.
+
+
+## Metode: 
+
+
+### Studiendesign: 
+
+For å kunne sammenligne effekten av trening med ett eller tre sett ved økning av musekstyrke, ble deltakerne delt randomisert inn i to ulike grupper. En single og en multiple. Der ble deltakerene testet i isk.60 før (pre), session1 (først trening) og etter (post) treningsintevensjonene. Den ene gruppa trente 1 sett x 8 repetisjoner maksimum (RM), den andre gruppa trente 3 sett x 8RM. 
+
+### Statistisk analyse: 
+
+Vi ville se på forskjellen mellom ett og tre sett gruppene i isokinetisk test med 60 grader i dreiemoment. Datasettet inneholder flere forskjellige variabler, vi var nødt til reduserer dataen til det vi var interesert i. Dette var isk.60 i pre - test, session1 og post - test for begge gruppene. Vi gjennomførte en mixed model fordi denne studien er randomisert, denne modellen sammenligner dataen til forsøkspersonene fra sitt utgangspunkt. En mixed model sammenligner disse to gruppene (sigle og multiple) og estimerer økningen av motstand (Nm) over de tre testpunktene. Dataen fra en mixed model ble brukt til å fremstille en gragisk forskjell mellom gruppene. 
+
+
+
+```{r DEL 2, echo=FALSE, message=FALSE, warning=FALSE }
+
+# Last inn datasett 
+
+strengthTests <- read.csv("./Data/strengthTests.csv", na = "NA") 
+
+st <- strengthTests %>%
+  filter(exercise == "isok.60")%>% # Velg exercise vi vil se på
+  mutate(timepoint = factor(timepoint, levels = c("pre", "session1","post")))
+
+
+```
+
+<br>
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+lm2 <- lm(load ~ timepoint * group, data = st)
+
+
+conf_intervals <- confint(lm2)
+
+# Save the regression coefficients
+coefs <- summary(lm2)$coef
+
+# Using cbind (column bind) to combine the two data frames
+coef_summary <- cbind(coefs, data.frame(conf_intervals)) 
+
+
+
+```
+
+<br>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+coef_summary %>%
+  kbl(caption = c("Tabell 2"),
+      digits = c(3, 3, 3, 3)) %>%
+ 
+  kable_classic()
+```
+
+<br>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Fig.cap = "Figur 2: Viser endringene i kgN fra pre, session 1, post i gruppene multiple og single" }
+
+est <- emmeans(lm2, specs = ~ timepoint|group)
+
+est %>%
+  data.frame() %>%
+  mutate(timepoint = factor(timepoint, levels = c("pre","session1","post" ))) %>%
+
+  
+  ggplot(aes(timepoint, emmean, group = group, color = group) ) + 
+  
+  # Adds raw data
+  
+  
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), 
+                position = position_dodge(width = 0.2), 
+                width = 0.1) +
+  geom_line(position = position_dodge(width = 0.2)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  labs(subtitle = "Figur 2") +
+  theme_minimal()
+```
+
+## Resultater del 2: 
+
+Tabell 2 viser at gruppen single startet med et høyere utgangspunkt på 7,9 kgnet enn multiple gruppen på pre - testen. 
+Gruppen sigle har gått ned med 8,53 Nm fra pre - test til session 1. 
+Mens gruppen multiple har økt med 0,3 Nm fra pre - test til session 1. Dette vil si at gruppene er tilnærmet like ved session 1. Fra pre - til post - test har gruppen single økt med 7,5 Nm og hatt en prosentvis økning på 4,1%. Mens gruppen multiple har økt med 31,7 Nm fra pre - til post- test og hatt en prostentvist økning på 18,1%. 
+
+
+## Diskusjon: 
+
+Resultatene av studien vår viser til en større økning i pronsent for multiple sett gruppen i forhold til single sett gruppen. Dette gjennspeiles godt med tidligere litteratur (Stoppani, 2006) og indikerer at de anbefalte treningsprogrammene stemmer med virkeligheten. Et større volum på styrke treningen gir og et bedre resultat med med mindre volum (Grgir et. al, 2018). Det kommer ikke frem en signifikent forskjell mellom gruppene, men dette kan blant annet skylles en lite spesifikk test i forhold til treningsopplegget som blir gjennomført. 
+
+
+## Konklusjon
+
+Det kom ikke frem en signifikant forskjell mellom singel og multiplegruppen, men det er en tendens til en større utvikling hos gruppen med flere sett. Dermed må vi konkludere med at det ikke er noe forskjell etter dette studiet. Men tror at mer og bedre forskning vil gi et annet resultat, tilnærmet lik hypotesen vi hadde. 
+
+
+## Referanser: 
+(Her skal det egt være bibliography men fikk det ikke til, skal ordnes til eksamen)
+
+Grgic, J., Schoenfeld, B. J., Davies, T. B., Lazinica, B., Krieger, J. W. & Pedisic, Z. (2018). Effect of Resistance Training Frequency on Gains in Muscular Strength: A Systematic Review and Meta-Analysis. *Sports Med* (48)/1207–1220
+doi.org/10.1007/s40279-018-0872-x  
+
+Heggelund, J., Fimland, M. S., Helgerud, J. & Hoff, J. (2013). Maximal strength training improves work economy, rate of force development and maximal strength more than conventional strength training. *Eur J Appl Physiol* (113), 1565–1573
+DOI 10.1007/s00421-013-2586-y
+
+
+Stoppani, J. (2006). *Encyclopedia of muscle & strenght.* Human kinetics.
+
